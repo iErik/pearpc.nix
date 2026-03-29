@@ -19,6 +19,14 @@ let
   useGenericCpu =
     stdenv.hostPlatform.isx86_64 || stdenv.hostPlatform.parsed.cpu.name == "i686";
 
+  # The x86/x86_64 JIT emits CALL/JMP rel32 instructions. Those require the
+  # JIT translation cache and the binary's .text to be within ±2 GB of each
+  # other. PIE places the binary at a random high virtual address (~0x55a3…),
+  # putting it far outside that range and causing asmCALL to emit a truncated
+  # displacement → wrong jump target → SIGSEGV. Disable PIE so the binary
+  # loads at its link address (~0x400000), always within 2 GB of the JIT cache.
+  useJitcX86 = cpu != null && lib.hasPrefix "jitc_x86" cpu;
+
   effectiveUi = if ui == null then "sdl" else ui;
 
   cpuConfigureFlags =
@@ -42,6 +50,9 @@ stdenv.mkDerivation {
   };
 
   strictDeps = true;
+
+  # See useJitcX86 comment above.
+  hardeningDisable = lib.optionals useJitcX86 [ "pie" ];
 
   patches = [
     ./patches/generic-ppc-fatal.patch
