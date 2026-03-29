@@ -8,13 +8,27 @@
   flex,
   bison,
   sdl3,
+  libX11,
+  libXext,
+  cpu ? null,
+  ui ? null,
 }:
 
 let
   # GCC 13+ rejects passing packed FPR slots by non-const reference in cpu_jitc_x86_64 (ppc_fpu.cc).
   useGenericCpu =
     stdenv.hostPlatform.isx86_64 || stdenv.hostPlatform.parsed.cpu.name == "i686";
+
+  effectiveUi = if ui == null then "sdl" else ui;
+
+  cpuConfigureFlags =
+    if cpu != null then
+      [ "--enable-cpu=${cpu}" ]
+    else
+      lib.optional useGenericCpu "--enable-cpu=generic";
 in
+
+assert lib.assertMsg (effectiveUi != "gtk") "pearpc: ui = \"gtk\" is not supported in this flake (see meta.longDescription).";
 
 stdenv.mkDerivation {
   pname = "pearpc";
@@ -39,7 +53,12 @@ stdenv.mkDerivation {
     bison
   ];
 
-  buildInputs = [ sdl3 ];
+  buildInputs =
+    lib.optionals (effectiveUi == "sdl") [ sdl3 ]
+    ++ lib.optionals (effectiveUi == "x11") [
+      libX11
+      libXext
+    ];
 
   postPatch = ''
     substituteInPlace src/debug/debugparse.y \
@@ -55,8 +74,8 @@ int yylex(YYSTYPE *yylval);
   preConfigure = "./autogen.sh";
 
   configureFlags = [
-    "--enable-ui=sdl"
-  ] ++ lib.optional useGenericCpu "--enable-cpu=generic";
+    "--enable-ui=${effectiveUi}"
+  ] ++ cpuConfigureFlags;
 
   installPhase = ''
     runHook preInstall
@@ -72,10 +91,16 @@ int yylex(YYSTYPE *yylval);
       PearPC emulates PowerPC systems and can run many PowerPC operating systems.
       Networking features may require TUN/TAP support on the host at runtime.
 
-      On x86/x86_64 hosts this build uses the portable generic CPU core because
-      current GCC rejects the x86 JIT sources; aarch64 still uses the AArch64 JIT
-      when supported by upstream. A small patch adds the missing generic
-      `ppc_fatal` symbol that upstream only ships in the AArch64 JIT tree.
+      On x86/x86_64 hosts this build uses the portable generic CPU core by default
+      because current GCC rejects the x86 JIT sources; aarch64 still uses the
+      AArch64 JIT when supported by upstream. A small patch adds the missing
+      generic `ppc_fatal` symbol that upstream only ships in the AArch64 JIT tree.
+
+      Override Nix arguments `cpu` and `ui` to pass PearPC’s `--enable-cpu` and
+      `--enable-ui` configure flags (e.g. `jitc_aarch64`, `x11`). Forcing
+      `jitc_x86` / `jitc_x86_64` on x86/x86_64 may fail to compile with current
+      GCC. The GTK UI is not supported in this flake (upstream gtk makefiles
+      assume FHS paths and the final link does not resolve reliably under Nix).
     '';
     homepage = "https://github.com/sebastianbiallas/pearpc";
     license = lib.licenses.gpl2Only;

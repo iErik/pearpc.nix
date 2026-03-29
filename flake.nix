@@ -1,5 +1,5 @@
 {
-  description = "PearPC — PowerPC emulator (flake package + NixOS module for TUN-friendly networking)";
+  description = "PearPC, Basilisk II, SheepShaver — emulators (flake packages + PearPC NixOS module)";
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
@@ -14,7 +14,11 @@
       ];
       forAllSystems = nixpkgs.lib.genAttrs systems;
 
-      pearpcNixosModule = import ./nixos/pearpc.nix { inherit self; lib = nixpkgs.lib; };
+      pearpcNixosModule = import ./nixos/pearpc.nix {
+        inherit self;
+        lib = nixpkgs.lib;
+        pearpcNix = ./pearpc.nix;
+      };
     in
     {
       nixosModules = {
@@ -26,9 +30,12 @@
         system:
         let
           pkgs = nixpkgs.legacyPackages.${system};
+          macemuSrc = pkgs.callPackage ./macemu-src.nix { };
         in
         {
           pearpc = pkgs.callPackage ./pearpc.nix { };
+          basilisk2 = pkgs.callPackage ./basilisk2.nix { src = macemuSrc; };
+          sheepshaver = pkgs.callPackage ./sheepshaver.nix { src = macemuSrc; };
           default = self.packages.${system}.pearpc;
         }
       );
