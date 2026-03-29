@@ -1,0 +1,29 @@
+diff --git a/src/cpu/cpu_generic/ppc_cpu.cc b/src/cpu/cpu_generic/ppc_cpu.cc
+--- a/src/cpu/cpu_generic/ppc_cpu.cc
++++ b/src/cpu/cpu_generic/ppc_cpu.cc
+@@ -22,6 +22,7 @@
+ #include <cstring>
+ #include <cstdio>
+ #include <cstdlib>
++#include <cstdarg>
+ 
+ #include "system/systhread.h"
+ #include "system/arch/sysendian.h"
+@@ -277,6 +278,17 @@
+ 	exit(code);
+ }
+ 
++void ppc_fatal(const char *fmt, ...)
++{
++	va_list ap;
++	va_start(ap, fmt);
++	fprintf(stderr, "\n*** FATAL: ");
++	vfprintf(stderr, fmt, ap);
++	fprintf(stderr, "\n");
++	va_end(ap);
++	ppc_cpu_crash_dump(1);
++}
++
+ void ppc_cpu_stop()
+ {
+ 	sys_lock_mutex(exception_mutex);
