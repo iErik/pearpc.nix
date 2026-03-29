@@ -1,0 +1,29 @@
+diff --git a/src/cpu/cpu_jitc_x86_64/ppc_cpu.cc b/src/cpu/cpu_jitc_x86_64/ppc_cpu.cc
+--- a/src/cpu/cpu_jitc_x86_64/ppc_cpu.cc
++++ b/src/cpu/cpu_jitc_x86_64/ppc_cpu.cc
+@@ -21,6 +21,7 @@
+ #include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
++#include <cstdarg>
+ 
+ #include "debug/tracers.h"
+ #include "system/sys.h"
+@@ -164,6 +165,17 @@ void ppc_cpu_crash_dump(int code)
+ 	exit(code);
+ }
+ 
++void ppc_fatal(const char *fmt, ...)
++{
++	va_list ap;
++	va_start(ap, fmt);
++	fprintf(stderr, "\n*** FATAL: ");
++	vfprintf(stderr, fmt, ap);
++	fprintf(stderr, "\n");
++	va_end(ap);
++	ppc_cpu_crash_dump(1);
++}
++
+ void ppc_cpu_stop()
+ {
+ 	ppc_cpu_atomic_raise_stop_exception(*gCPU);

@@ -1,0 +1,63 @@
+--- a/src/cpu/cpu_jitc_x86_64/ppc_mmu.cc	2026-03-29 02:50:59.690733426 -0300
++++ b/src/cpu/cpu_jitc_x86_64/ppc_mmu.cc	2026-03-29 02:51:39.291520837 -0300
+@@ -1567,7 +1567,10 @@
+ 		ppc_double d;
+ 		ppc_fpu_unpack_single(s, r);
+ 		ppc_fpu_single_to_double(s, d);
+-		ppc_fpu_pack_double(aCPU.fpscr, d, aCPU.fpr[frD]);
++		{ uint64 __pearpc_fpr_tmp;
++		(void)ppc_fpu_pack_double(aCPU.fpscr, d, __pearpc_fpr_tmp);
++		aCPU.fpr[frD] = __pearpc_fpr_tmp;
++		}
+ 	}	
+ }
+ JITCFlow ppc_opc_gen_lfs(JITC &jitc)
+@@ -1606,7 +1609,10 @@
+ 		ppc_double d;
+ 		ppc_fpu_unpack_single(s, r);
+ 		ppc_fpu_single_to_double(s, d);
+-		ppc_fpu_pack_double(aCPU.fpscr, d, aCPU.fpr[frD]);
++		{ uint64 __pearpc_fpr_tmp;
++		(void)ppc_fpu_pack_double(aCPU.fpscr, d, __pearpc_fpr_tmp);
++		aCPU.fpr[frD] = __pearpc_fpr_tmp;
++		}
+ 		aCPU.gpr[rA] += imm;
+ 	}	
+ }
+@@ -1650,7 +1656,10 @@
+ 		ppc_double d;
+ 		ppc_fpu_unpack_single(s, r);
+ 		ppc_fpu_single_to_double(s, d);
+-		ppc_fpu_pack_double(aCPU.fpscr, d, aCPU.fpr[frD]);
++		{ uint64 __pearpc_fpr_tmp;
++		(void)ppc_fpu_pack_double(aCPU.fpscr, d, __pearpc_fpr_tmp);
++		aCPU.fpr[frD] = __pearpc_fpr_tmp;
++		}
+ 	}	
+ }
+ JITCFlow ppc_opc_gen_lfsux(JITC &jitc)
+@@ -1689,7 +1698,10 @@
+ 		ppc_double d;
+ 		ppc_fpu_unpack_single(s, r);
+ 		ppc_fpu_single_to_double(s, d);
+-		ppc_fpu_pack_double(aCPU.fpscr, d, aCPU.fpr[frD]);
++		{ uint64 __pearpc_fpr_tmp;
++		(void)ppc_fpu_pack_double(aCPU.fpscr, d, __pearpc_fpr_tmp);
++		aCPU.fpr[frD] = __pearpc_fpr_tmp;
++		}
+ 	}	
+ }
+ JITCFlow ppc_opc_gen_lfsx(JITC &jitc)
+@@ -1968,9 +1980,11 @@
+ 	PPC_OPC_TEMPL_D_SImm(aCPU.current_opc, rD, rA, imm);
+ 	uint32 ea = (rA ? aCPU.gpr[rA] : 0) + imm;
+ 	while (rD <= 31) {
+-		if (ppc_read_effective_word(aCPU, ea, aCPU.gpr[rD])) {
++		uint32 __pearpc_gpr_tmp;
++		if (ppc_read_effective_word(aCPU, ea, __pearpc_gpr_tmp)) {
+ 			return;
+ 		}
++		aCPU.gpr[rD] = __pearpc_gpr_tmp;
+ 		rD++;
+ 		ea += 4;
+ 	}

@@ -15,7 +15,7 @@
 }:
 
 let
-  # GCC 13+ rejects passing packed FPR slots by non-const reference in cpu_jitc_x86_64 (ppc_fpu.cc).
+  # GCC 13+ rejects passing packed GPR/FPR slots by non-const reference in cpu_jitc_x86_64 (patched).
   useGenericCpu =
     stdenv.hostPlatform.isx86_64 || stdenv.hostPlatform.parsed.cpu.name == "i686";
 
@@ -43,7 +43,14 @@ stdenv.mkDerivation {
 
   strictDeps = true;
 
-  patches = [ ./patches/generic-ppc-fatal.patch ];
+  patches = [
+    ./patches/generic-ppc-fatal.patch
+    # GCC 13+: cannot bind packed `fpr[]` / `gpr[]` to non-const references.
+    ./patches/jitc-x86-64-packed-fpr.patch
+    ./patches/jitc-x86-64-packed-mmu.patch
+    # IO code calls ppc_fatal; upstream only defines it in generic / AArch64 CPU trees.
+    ./patches/jitc-x86-64-ppc-fatal.patch
+  ];
 
   nativeBuildInputs = [
     autoconf
@@ -91,15 +98,17 @@ int yylex(YYSTYPE *yylval);
       PearPC emulates PowerPC systems and can run many PowerPC operating systems.
       Networking features may require TUN/TAP support on the host at runtime.
 
-      On x86/x86_64 hosts this build uses the portable generic CPU core by default
-      because current GCC rejects the x86 JIT sources; aarch64 still uses the
-      AArch64 JIT when supported by upstream. A small patch adds the missing
-      generic `ppc_fatal` symbol that upstream only ships in the AArch64 JIT tree.
+      On x86/x86_64 hosts this build uses the portable generic CPU core by default.
+      Patches supply `ppc_fatal` for the generic CPU tree and for `jitc_x86_64`
+      (upstream only defines it alongside the AArch64 JIT). Other patches fix
+      x86_64 JIT code so current GCC accepts packed GPR/FPR slots (no binding
+      to non-const references). aarch64 still uses the AArch64 JIT when supported
+      by upstream.
 
       Override Nix arguments `cpu` and `ui` to pass PearPC’s `--enable-cpu` and
-      `--enable-ui` configure flags (e.g. `jitc_aarch64`, `x11`). Forcing
-      `jitc_x86` / `jitc_x86_64` on x86/x86_64 may fail to compile with current
-      GCC. The GTK UI is not supported in this flake (upstream gtk makefiles
+      `--enable-ui` configure flags (e.g. `jitc_aarch64`, `jitc_x86_64`, `x11`).
+      `jitc_x86` (32-bit JIT) is untested here and may still break on modern GCC.
+      The GTK UI is not supported in this flake (upstream gtk makefiles
       assume FHS paths and the final link does not resolve reliably under Nix).
     '';
     homepage = "https://github.com/sebastianbiallas/pearpc";

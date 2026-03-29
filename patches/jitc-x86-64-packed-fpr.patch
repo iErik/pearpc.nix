@@ -1,0 +1,230 @@
+--- a/src/cpu/cpu_jitc_x86_64/ppc_fpu.cc	2026-03-29 02:49:00.095558784 -0300
++++ b/src/cpu/cpu_jitc_x86_64/ppc_fpu.cc	2026-03-29 02:50:35.234616714 -0300
+@@ -1028,7 +1028,10 @@
+ 		aCPU.fpscr |= FPSCR_VXISI;
+ 	}
+ 	ppc_fpu_add(aCPU.fpscr, D, A, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fadd.\n");
+@@ -1067,7 +1070,10 @@
+ 		aCPU.fpscr |= FPSCR_VXISI;
+ 	}
+ 	ppc_fpu_add(aCPU.fpscr, D, A, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fadds.\n");
+@@ -1293,7 +1299,10 @@
+ 		aCPU.fpscr |= FPSCR_VXIDI;		
+ 	}
+ 	ppc_fpu_div(D, A, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fdiv.\n");
+@@ -1339,7 +1348,10 @@
+ 		aCPU.fpscr |= FPSCR_VXIDI;		
+ 	}
+ 	ppc_fpu_div(D, A, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fdivs.\n");
+@@ -1363,7 +1375,10 @@
+ 	ppc_fpu_unpack_double(B, aCPU.fpr[frB]);
+ 	ppc_fpu_unpack_double(C, aCPU.fpr[frC]);
+ 	ppc_fpu_mul_add(aCPU.fpscr, D, A, C, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fmadd.\n");
+@@ -1397,7 +1412,10 @@
+ 	ppc_fpu_unpack_double(B, aCPU.fpr[frB]);
+ 	ppc_fpu_unpack_double(C, aCPU.fpr[frC]);
+ 	ppc_fpu_mul_add(aCPU.fpscr, D, A, C, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fmadds.\n");
+@@ -1475,7 +1493,10 @@
+ 	ppc_fpu_unpack_double(C, aCPU.fpr[frC]);
+ 	B.s ^= 1;
+ 	ppc_fpu_mul_add(aCPU.fpscr, D, A, C, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fmsub.\n");
+@@ -1510,7 +1531,10 @@
+ 	ppc_fpu_unpack_double(C, aCPU.fpr[frC]);
+ 	B.s ^= 1;
+ 	ppc_fpu_mul_add(aCPU.fpscr, D, A, C, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fmsubs.\n");
+@@ -1538,7 +1562,10 @@
+ 		aCPU.fpscr |= FPSCR_VXIMZ;
+ 	}
+ 	ppc_fpu_mul(D, A, C);
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fmul.\n");
+@@ -1578,7 +1605,10 @@
+ 		aCPU.fpscr |= FPSCR_VXIMZ;
+ 	}
+ 	ppc_fpu_mul(D, A, C);
+-	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fmuls.\n");
+@@ -1700,7 +1730,10 @@
+ 	ppc_fpu_unpack_double(C, aCPU.fpr[frC]);
+ 	ppc_fpu_mul_add(aCPU.fpscr, D, A, C, B);
+ 	D.s ^= 1;
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fnmadd.\n");
+@@ -1735,7 +1768,10 @@
+ 	ppc_fpu_unpack_double(C, aCPU.fpr[frC]);
+ 	ppc_fpu_mul_add(aCPU.fpscr, D, A, C, B);
+ 	D.s ^= 1;
+-	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fnmadds.\n");
+@@ -1761,7 +1797,10 @@
+ 	B.s ^= 1;
+ 	ppc_fpu_mul_add(aCPU.fpscr, D, A, C, B);
+ 	D.s ^= 1;
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fnmsub.\n");
+@@ -1797,7 +1836,10 @@
+ 	B.s ^= 1;
+ 	ppc_fpu_mul_add(aCPU.fpscr, D, A, C, B);
+ 	D.s ^= 1;
+-	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fnmsubs.\n");
+@@ -1839,7 +1881,10 @@
+ 	PPC_OPC_ASSERT(frA==0);
+ 	ppc_double B;
+ 	ppc_fpu_unpack_double(B, aCPU.fpr[frB]);
+-	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, B, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, B, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("frsp.\n");
+@@ -1867,7 +1912,10 @@
+ 	aCPU.fpscr |= ppc_fpu_sqrt(aCPU.fpscr, Q, B);
+ 	E.type = ppc_fpr_norm; E.s = 0; E.e = 0; E.m = 0x80000000000000ULL;
+ 	ppc_fpu_div(D, E, Q);
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);	
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("frsqrte.\n");
+@@ -1934,7 +1982,10 @@
+ 	ppc_double D;
+ 	ppc_fpu_unpack_double(B, aCPU.fpr[frB]);
+ 	ppc_fpu_sqrt(aCPU.fpscr, D, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fsqrt.\n");
+@@ -1995,7 +2046,10 @@
+ 		aCPU.fpscr |= FPSCR_VXISI;
+ 	}
+ 	ppc_fpu_add(aCPU.fpscr, D, A, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fsub.\n");
+@@ -2042,7 +2096,10 @@
+ 		aCPU.fpscr |= FPSCR_VXISI;
+ 	}
+ 	ppc_fpu_add(aCPU.fpscr, D, A, B);
+-	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, aCPU.fpr[frD]);
++	{ uint64 __pearpc_fpr_tmp;
++	aCPU.fpscr |= ppc_fpu_pack_double_as_single(aCPU.fpscr, D, __pearpc_fpr_tmp);
++	aCPU.fpr[frD] = __pearpc_fpr_tmp;
++	}
+ 	if (aCPU.current_opc & PPC_OPC_Rc) {
+ 		// update cr1 flags
+ 		PPC_FPU_ERR("fsubs.\n");

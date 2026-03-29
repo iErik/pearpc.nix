@@ -75,8 +75,8 @@ in
       description = ''
         PearPC `--enable-cpu` value (`generic`, `jitc_x86`, `jitc_x86_64`,
         `jitc_aarch64`). When `null`, the package uses the flake default (on
-        x86/x86_64 that is `generic` because current GCC rejects the x86 JIT
-        sources).
+        x86/x86_64 that is `generic` unless you set e.g. `jitc_x86_64` (the flake
+        patches generic `ppc_fatal` and x86_64 JIT FPU code for current GCC).
 
         Only used when `package` is `null`.
       '';
@@ -199,10 +199,9 @@ in
         ++ lib.optional (
           cfg.enable
           && cfg.package == null
-          && cfg.cpu != null
-          && (cfg.cpu == "jitc_x86" || cfg.cpu == "jitc_x86_64")
+          && cfg.cpu == "jitc_x86"
           && pkgs.stdenv.hostPlatform.isx86_64
-        ) "programs.pearpc.cpu=${cfg.cpu}: PearPC’s x86 JIT often fails to build with current GCC on x86_64; consider `generic` or upstream fixes.";
+        ) "programs.pearpc.cpu=jitc_x86: the 32-bit x86 JIT is untested here and may fail to build with current GCC; consider `generic` or `jitc_x86_64`.";
     }
   ];
 }
