@@ -34,6 +34,7 @@
         in
         {
           pearpc = pkgs.callPackage ./pearpc.nix { };
+          pearpc-jitc-x86_64 = pkgs.callPackage ./pearpc.nix { cpu = "jitc_x86_64"; };
           basilisk2 = pkgs.callPackage ./basilisk2.nix { src = macemuSrc; };
           sheepshaver = pkgs.callPackage ./sheepshaver.nix { src = macemuSrc; };
           default = self.packages.${system}.pearpc;
