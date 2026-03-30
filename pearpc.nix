@@ -171,7 +171,19 @@ open(f, 'w').write(src)
 EOF
   '';
 
-  preConfigure = "./autogen.sh";
+  preConfigure =
+    # Disable PIE: the x86/x86_64 JIT emits CALL/JMP rel32, which truncates
+    # the displacement to 32 bits.  A PIE binary lands at ~0x5555... (~94 TB),
+    # while MAP_32BIT places the JIT cache in the first 2 GB.  The ~94 TB gap
+    # overflows int32 → wrong jump target → SIGSEGV.  hardeningDisable=["pie"]
+    # is also set, but export LDFLAGS here ensures PIE is off even when this
+    # derivation is wrapped in overrideAttrs (NixOS module compilerOptimizeForHostCpu).
+    lib.optionalString useJitcX86 ''
+      export LDFLAGS="$LDFLAGS -no-pie"
+      export CFLAGS="$CFLAGS -fno-pie"
+      export CXXFLAGS="$CXXFLAGS -fno-pie"
+    ''
+    + "./autogen.sh";
 
   configureFlags = [
     "--enable-ui=${effectiveUi}"
