@@ -7,6 +7,7 @@
   pkg-config,
   flex,
   bison,
+  python3,
   sdl3,
   libX11,
   libXext,
@@ -69,6 +70,7 @@ stdenv.mkDerivation {
     pkg-config
     flex
     bison
+    python3
   ];
 
   buildInputs =
