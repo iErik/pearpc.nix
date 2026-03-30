@@ -1,0 +1,72 @@
+--- a/src/system/osapi/posix/sysvm.cc
++++ b/src/system/osapi/posix/sysvm.cc
+@@ -21,6 +21,7 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ #include <sys/mman.h>
++#include <stdint.h>
+ #include <sys/types.h>
+ #include <sys/stat.h>
+ #include <fcntl.h>
+@@ -47,13 +48,55 @@
+ void *sys_alloc_read_write_execute(size_t size)
+ {
+ 	int flags = MAP_ANON | MAP_PRIVATE;
++	void *p;
+ #if defined(__aarch64__) && defined(__APPLE__)
+ 	flags |= MAP_JIT;
++	p = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, flags, -1, 0);
++#elif defined(__x86_64__) || defined(__i386__)
++	/*
++	 * The x86/x86_64 JIT emits CALL rel32 / JMP rel32 instructions which
++	 * require the translation cache and the binary .text helpers to be
++	 * within +-2 GB of each other.
++	 *
++	 * MAP_32BIT keeps the cache in the low 2 GB, which works when the
++	 * binary is non-PIE (also in low memory), but fails when it is
++	 * position-independent (PIE) and the kernel places it at a high random
++	 * address (~0x5555...).
++	 *
++	 * Pass mmap() a hint derived from the address of this very function
++	 * (which lives in the binary .text) so the cache is allocated just
++	 * below the binary.  Fall back to MAP_32BIT when the hint is too close
++	 * to address 0 (non-PIE builds where the binary loads in the low 2 GB)
++	 * or when the kernel ignores the hint and maps outside the +-2 GB
++	 * window.
++	 */
++	p = MAP_FAILED;
++	{
++		uintptr_t anchor =
++			(uintptr_t)(void *)sys_alloc_read_write_execute;
++		if (anchor >= (uintptr_t)size) {
++			void *hint = (void *)(anchor - (uintptr_t)size);
++			p = mmap(hint, size,
++				 PROT_READ | PROT_WRITE | PROT_EXEC,
++				 flags, -1, 0);
++			if (p != MAP_FAILED) {
++				/* Reject if further than +-1.75 GB from anchor.
++				 * The JIT cache is 64 MB so this leaves >1.6 GB
++				 * of margin for the binary .text range. */
++				intptr_t off =
++					(intptr_t)((uintptr_t)p - anchor);
++				if (off < -(intptr_t)0x70000000 ||
++				    off >  (intptr_t)0x70000000) {
++					munmap(p, size);
++					p = MAP_FAILED;
++				}
++			}
++		}
++	}
++	if (p == MAP_FAILED)
++		p = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
++			 flags | MAP_32BIT, -1, 0);
+ #else
+-	flags |= MAP_32BIT;
++	p = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
++		 flags | MAP_32BIT, -1, 0);
+ #endif
+-	void *p = mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, flags, -1, 0);
+-
+-	return (p == (void *)-1) ? NULL : p;
++	return (p == MAP_FAILED) ? NULL : p;
+ }

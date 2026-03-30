@@ -21,10 +21,10 @@ let
 
   # The x86/x86_64 JIT emits CALL/JMP rel32 instructions. Those require the
   # JIT translation cache and the binary's .text to be within ±2 GB of each
-  # other. PIE places the binary at a random high virtual address (~0x55a3…),
-  # putting it far outside that range and causing asmCALL to emit a truncated
-  # displacement → wrong jump target → SIGSEGV. Disable PIE so the binary
-  # loads at its link address (~0x400000), always within 2 GB of the JIT cache.
+  # other. The mmap-hint patch (jitc-x86-64-mmap-hint.patch) fixes this at the
+  # source level by placing the JIT cache near the binary's .text regardless of
+  # PIE. hardeningDisable = ["pie"] is kept as belt-and-suspenders for non-PIE
+  # builds (PIE disabled → binary at ~0x400000, always within 2 GB of cache).
   useJitcX86 = cpu != null && lib.hasPrefix "jitc_x86" cpu;
 
   effectiveUi = if ui == null then "sdl" else ui;
@@ -59,6 +59,10 @@ stdenv.mkDerivation {
     # GCC 13+: cannot bind packed `fpr[]` / `gpr[]` to non-const references.
     ./patches/jitc-x86-64-packed-fpr.patch
     ./patches/jitc-x86-64-packed-mmu.patch
+    # Place the JIT translation cache near the binary .text so CALL/JMP rel32
+    # instructions reach helper functions regardless of PIE. Applies to all
+    # builds; the fix is #ifdef-gated to x86/x86_64 at compile time.
+    ./patches/jitc-x86-64-mmap-hint.patch
     # IO code calls ppc_fatal; upstream only defines it in generic / AArch64 CPU trees.
     ./patches/jitc-x86-64-ppc-fatal.patch
   ];
