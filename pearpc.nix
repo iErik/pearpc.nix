@@ -21,9 +21,9 @@ let
 
   # The x86/x86_64 JIT emits CALL/JMP rel32 instructions. Those require the
   # JIT translation cache and the binary's .text to be within ±2 GB of each
-  # other. The mmap-hint patch (jitc-x86-64-mmap-hint.patch) fixes this at the
-  # source level by placing the JIT cache near the binary's .text regardless of
-  # PIE. hardeningDisable = ["pie"] is kept as belt-and-suspenders for non-PIE
+  # other. postPatch rewrites sys_alloc_read_write_execute to hint mmap() near
+  # the binary's .text, fixing this for both PIE and non-PIE builds.
+  # hardeningDisable = ["pie"] is kept as belt-and-suspenders for non-PIE
   # builds (PIE disabled → binary at ~0x400000, always within 2 GB of cache).
   useJitcX86 = cpu != null && lib.hasPrefix "jitc_x86" cpu;
 
@@ -59,10 +59,6 @@ stdenv.mkDerivation {
     # GCC 13+: cannot bind packed `fpr[]` / `gpr[]` to non-const references.
     ./patches/jitc-x86-64-packed-fpr.patch
     ./patches/jitc-x86-64-packed-mmu.patch
-    # Place the JIT translation cache near the binary .text so CALL/JMP rel32
-    # instructions reach helper functions regardless of PIE. Applies to all
-    # builds; the fix is #ifdef-gated to x86/x86_64 at compile time.
-    ./patches/jitc-x86-64-mmap-hint.patch
     # IO code calls ppc_fatal; upstream only defines it in generic / AArch64 CPU trees.
     ./patches/jitc-x86-64-ppc-fatal.patch
   ];
@@ -91,6 +87,86 @@ int yylex(YYSTYPE *yylval);
 %token <scalar> EVAL_INT'
     substituteInPlace src/debug/lex.h \
       --replace-fail 'int yylex();' ""
+
+    # Rewrite sys_alloc_read_write_execute in sysvm.cc to allocate the JIT
+    # translation cache near the binary .text section.  The x86/x86_64 JIT
+    # emits CALL/JMP rel32 instructions that require source and target to be
+    # within ±2 GB.  MAP_32BIT only satisfies this for non-PIE binaries;
+    # using a hint derived from a .text address works for both PIE and non-PIE.
+    python3 - <<'EOF'
+import sys
+f = 'src/system/osapi/posix/sysvm.cc'
+src = open(f).read()
+
+old = (
+    '#include <sys/mman.h>\n'
+    '#include <sys/types.h>\n'
+)
+new = (
+    '#include <sys/mman.h>\n'
+    '#include <stdint.h>\n'
+    '#include <sys/types.h>\n'
+)
+assert old in src, 'sysvm.cc: include block not found'
+src = src.replace(old, new, 1)
+
+old = """\
+void *sys_alloc_read_write_execute(size_t size)
+{
+\tint flags = MAP_ANON | MAP_PRIVATE;
+#if defined(__aarch64__) && defined(__APPLE__)
+\tflags |= MAP_JIT;
+#else
+\tflags |= MAP_32BIT;
+#endif
+\tvoid *p = mmap(0, size, PROT_READ | PROT_WRITE | PROT_EXEC, flags, -1, 0);
+
+\treturn (p == (void *)-1) ? NULL : p;
+}"""
+
+new = """\
+void *sys_alloc_read_write_execute(size_t size)
+{
+\tint flags = MAP_ANON | MAP_PRIVATE;
+\tvoid *p;
+#if defined(__aarch64__) && defined(__APPLE__)
+\tflags |= MAP_JIT;
+\tp = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC, flags, -1, 0);
+#elif defined(__x86_64__) || defined(__i386__)
+\t/* The x86 JIT emits CALL/JMP rel32: source and target must be within
+\t * +-2 GB.  Hint mmap() to just below this function (in .text) so the
+\t * cache lands near all helper functions regardless of PIE.  Fall back
+\t * to MAP_32BIT (works for non-PIE) if the hint is too close to 0 or
+\t * the kernel maps outside the window. */
+\tp = MAP_FAILED;
+\t{
+\t\tuintptr_t anchor = (uintptr_t)(void *)sys_alloc_read_write_execute;
+\t\tif (anchor >= (uintptr_t)size) {
+\t\t\tvoid *hint = (void *)(anchor - (uintptr_t)size);
+\t\t\tp = mmap(hint, size, PROT_READ | PROT_WRITE | PROT_EXEC, flags, -1, 0);
+\t\t\tif (p != MAP_FAILED) {
+\t\t\t\tintptr_t off = (intptr_t)((uintptr_t)p - anchor);
+\t\t\t\tif (off < -(intptr_t)0x70000000 || off > (intptr_t)0x70000000) {
+\t\t\t\t\tmunmap(p, size);
+\t\t\t\t\tp = MAP_FAILED;
+\t\t\t\t}
+\t\t\t}
+\t\t}
+\t}
+\tif (p == MAP_FAILED)
+\t\tp = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
+\t\t         flags | MAP_32BIT, -1, 0);
+#else
+\tp = mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
+\t         flags | MAP_32BIT, -1, 0);
+#endif
+\treturn (p == MAP_FAILED) ? NULL : p;
+}"""
+
+assert old in src, 'sysvm.cc: function body not found'
+src = src.replace(old, new, 1)
+open(f, 'w').write(src)
+EOF
   '';
 
   preConfigure = "./autogen.sh";
