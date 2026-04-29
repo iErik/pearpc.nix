@@ -53,7 +53,7 @@ stdenv.mkDerivation {
   strictDeps = true;
 
   # See useJitcX86 comment above.
-  hardeningDisable = lib.optionals useJitcX86 [ "pie" ];
+  hardeningDisable = lib.optionals useJitcX86 [ "pic" ];
 
   patches = [
     ./patches/generic-ppc-fatal.patch
